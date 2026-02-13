@@ -26,7 +26,19 @@ class UserLogin(BaseModel):
     password: Password
 
 
-class UserResponse(UserBase):
+# Base schema used for reading user from ORM
+class UserBaseResponse(BaseModel):
     id: int
+    full_name: str | None = None
+    email: str
     created_at: datetime
+    model_config = {"from_attributes": True}
+
+
+class UserRegisterResponse(UserBaseResponse):
+    pass
+
+
+class UserLoginResponse(UserBaseResponse):
+    access_token: str
     model_config = {"from_attributes": True}

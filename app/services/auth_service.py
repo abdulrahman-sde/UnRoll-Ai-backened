@@ -1,27 +1,31 @@
-import logging
 import asyncio
 
 from fastapi import Depends
+import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.config import settings
 from app.core.dependencies import get_db
 from app.core.exceptions import (
     ConflictException,
     UnauthorizedException,
 )
-from app.core.security import get_password_hash, verify_password
+from app.core.security import get_password_hash, verify_password, create_access_token
 from app.models.user import User
-from app.schemas.user import UserLogin, UserRegister, UserResponse
-
-logger = logging.getLogger(__name__)
+from app.schemas.user import (
+    UserBaseResponse,
+    UserLogin,
+    UserLoginResponse,
+    UserRegister,
+    UserRegisterResponse,
+)
 
 
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def register(self, register_data: UserRegister) -> UserResponse:
+    async def register(self, register_data: UserRegister) -> UserRegisterResponse:
         result = await self.db.execute(
             select(User).where(User.email == register_data.email)
         )
@@ -40,12 +44,9 @@ class AuthService:
         )
         self.db.add(user)
         await self.db.flush()
-        await self.db.refresh(user)
+        return UserRegisterResponse.model_validate(user)
 
-        logger.info("User registered: %s", user.email)
-        return UserResponse.model_validate(user)
-
-    async def login(self, credentials: UserLogin) -> UserResponse:
+    async def login(self, credentials: UserLogin) -> UserLoginResponse:
         result = await self.db.execute(
             select(User).where(User.email == credentials.email)
         )
@@ -60,7 +61,19 @@ class AuthService:
         if not is_valid:
             raise UnauthorizedException(message="Invalid credentials")
 
-        return UserResponse.model_validate(user)
+        payload = {
+            "user_id": user.id,
+            "email": user.email,
+        }
+
+        access_token = create_access_token(payload)
+
+        user_data = UserBaseResponse.model_validate(user)
+
+        return UserLoginResponse(
+            **user_data.model_dump(),
+            access_token=access_token,
+        )
 
 
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:

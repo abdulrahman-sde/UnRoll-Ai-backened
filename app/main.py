@@ -1,7 +1,9 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import router
+from app.core.config import setup_logging
 from app.core.exceptions import AppException
 from app.utils.utils import error_response
 
@@ -22,6 +24,18 @@ app.include_router(router, prefix="/api/v1")
 async def root():
     """Root endpoint"""
     return {"message": "Welcome to Unroll Ai", "success": True}
+
+
+# Setup logging ONCE at application startup
+setup_logging()
+
+# Get logger for main module
+logger = logging.getLogger(__name__)  # Name will be "__main__"
+
+
+@app.on_event("startup")
+async def startup():
+    logger.info("Application starting up")
 
 
 @app.exception_handler(AppException)
