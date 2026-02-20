@@ -6,6 +6,12 @@ from app.api.v1.router import router
 from app.core.config import setup_logging
 from app.core.exceptions import AppException
 from app.utils.utils import error_response
+from app.models import (
+    user,
+    job,
+    resume,
+    analysis,
+)  # noqa: F401 - ensures models are registered with SQLAlchemy
 
 
 app = FastAPI(title="Unroll Ai Backend", description="Backend API for Unroll AI")

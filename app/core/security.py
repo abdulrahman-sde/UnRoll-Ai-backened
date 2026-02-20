@@ -1,6 +1,6 @@
 from pwdlib import PasswordHash
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 from app.core.config import settings
@@ -17,8 +17,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(payload: Dict[str, Any]) -> str:
+    to_encode = payload.copy()
+    # Use timezone-aware UTC datetime for exp claim
+    to_encode["exp"] = datetime.now(timezone.utc) + timedelta(days=7)
     return jwt.encode(
-        payload, settings.JWT_SECRET, algorithm=settings.ALGORITHM or "HS256"
+        to_encode, settings.JWT_SECRET, algorithm=settings.ALGORITHM or "HS256"
     )
 
 

@@ -7,6 +7,9 @@ from alembic import context
 
 from app.core.db import Base
 from app.models import user
+from app.models import job
+from app.models import resume
+from app.models import analysis
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

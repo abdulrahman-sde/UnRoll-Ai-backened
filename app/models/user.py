@@ -1,8 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING, List
 from sqlalchemy import String, func
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.db import Base
+
+if TYPE_CHECKING:
+    from app.models.job import Job
+    from app.models.resume import Resume
+    from app.models.analysis import Analysis
 
 
 class User(Base):
@@ -20,4 +25,28 @@ class User(Base):
 
     updated_at: Mapped[datetime | None] = mapped_column(
         onupdate=func.now(), default=None
+    )
+
+    jobs: Mapped[List["Job"]] = relationship(
+        "Job",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Job.created_at.desc()",
+    )
+
+    resumes: Mapped[List["Resume"]] = relationship(
+        "Resume",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Resume.created_at.desc()",
+    )
+
+    analyses: Mapped[List["Analysis"]] = relationship(
+        "Analysis",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Analysis.created_at.desc()",
     )

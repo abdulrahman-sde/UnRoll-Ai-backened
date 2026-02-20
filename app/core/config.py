@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     JWT_SECRET: str = ""
     ALGORITHM: str = "HS256"
 
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
+
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+
 
 settings = Settings()
 
@@ -70,18 +79,4 @@ def setup_logging():
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(console_formatter)
 
-    # File handler (plain text, no colors)
-    file_formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    file_handler = logging.FileHandler("app.log")
-    file_handler.setFormatter(file_formatter)
-
-    # Configure root logger
-    logging.basicConfig(level=log_level, handlers=[console_handler, file_handler])
-
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f"Logging configured (Level: {settings.LOG_LEVEL}, Debug: {settings.DEBUG})"
-    )
+    logging.basicConfig(level=log_level, handlers=[console_handler])
