@@ -1,7 +1,6 @@
 import asyncio
 
 from fastapi import Depends
-import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -26,6 +25,7 @@ class AuthService:
         self.db = db
 
     async def register(self, register_data: UserRegister) -> UserRegisterResponse:
+        
         result = await self.db.execute(
             select(User).where(User.email == register_data.email)
         )

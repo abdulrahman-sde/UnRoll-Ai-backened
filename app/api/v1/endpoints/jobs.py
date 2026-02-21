@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.core.dependencies import get_current_user, TokenUser
 from app.schemas.job import JobCreate, JobResponse
 from app.services.job_service import JobService, get_job_service
 from app.utils.utils import success_response
@@ -12,7 +11,7 @@ router = APIRouter()
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_job(
     job_data: JobCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: TokenUser = Depends(get_current_user),
     job_service: JobService = Depends(get_job_service),
 ):
     """Create a new job for the authenticated user."""
@@ -22,7 +21,7 @@ async def create_job(
 
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_jobs_by_user(
-    current_user: User = Depends(get_current_user),
+    current_user: TokenUser = Depends(get_current_user),
     job_service: JobService = Depends(get_job_service),
 ):
     """Get all jobs for the authenticated user."""
@@ -33,7 +32,7 @@ async def get_jobs_by_user(
 @router.get("/{job_id}", status_code=status.HTTP_200_OK)
 async def get_job_by_id(
     job_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: TokenUser = Depends(get_current_user),
     job_service: JobService = Depends(get_job_service),
 ):
     """Get a job by ID for the authenticated user."""

@@ -1,11 +1,17 @@
+from dataclasses import dataclass
 from typing import AsyncGenerator
-from fastapi import Depends, Header
-from sqlalchemy import select
+from fastapi import Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import AsyncSessionLocal
 from app.core.security import decode_access_token
 from app.core.exceptions import UnauthorizedException
-from app.models.user import User
+
+
+@dataclass
+class TokenUser:
+    """Lightweight user object decoded from a JWT — no DB query needed."""
+    id: int
+    email: str
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -20,9 +26,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_current_user(
     authorization: str = Header(...),
-    db: AsyncSession = Depends(get_db),
-) -> User:
-    """Extract and validate the user from the JWT token."""
+) -> TokenUser:
+    """Decode the JWT and return a TokenUser — no DB query needed, JWT is self-contained."""
     if not authorization.startswith("Bearer "):
         raise UnauthorizedException(message="Invalid authorization header")
 
@@ -30,18 +35,7 @@ async def get_current_user(
 
     try:
         payload = decode_access_token(token)
-        user_id = payload.get("user_id")
-
-        if not user_id:
-            raise UnauthorizedException(message="Invalid token payload")
-
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            raise UnauthorizedException(message="User not found")
-
-        return user
+        return TokenUser(id=payload["user_id"], email=payload["email"])
     except Exception as e:
         if isinstance(e, UnauthorizedException):
             raise

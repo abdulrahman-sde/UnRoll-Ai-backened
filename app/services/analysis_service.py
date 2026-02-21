@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import cloudinary
 import cloudinary.uploader
@@ -76,14 +77,13 @@ class AnalysisService:
         # --- Read file bytes ---
         file_bytes = await file.read()
 
-        # --- 1. Upload to Cloudinary ---
-        logger.info("Uploading resume to Cloudinary: %s", file.filename)
-        resume_url = upload_to_cloudinary(file_bytes, file.filename or "resume.pdf")
+        # --- 1 & 2. Upload to Cloudinary + Parse PDF concurrently (both offloaded to threads) ---
+        logger.info("Uploading resume to Cloudinary and parsing PDF concurrently: %s", file.filename)
+        resume_url, resume_text = await asyncio.gather(
+            asyncio.to_thread(upload_to_cloudinary, file_bytes, file.filename or "resume.pdf"),
+            asyncio.to_thread(parse_pdf, file_bytes),
+        )
         logger.info("Resume uploaded: %s", resume_url)
-
-        # --- 2. Parse PDF ---
-        logger.info("Parsing PDF: %s", file.filename)
-        resume_text = parse_pdf(file_bytes)
         logger.info("Extracted %d characters from PDF", len(resume_text))
 
         # --- 3. Get job info ---
@@ -145,6 +145,61 @@ class AnalysisService:
             overall_score=analysis.overall_score,
             total_experience_years=analysis.total_experience_years,
             analysis_result=analysis_result,
+            created_at=analysis.created_at,
+        )
+
+
+    async def get_analyses_by_user(
+        self, user: User, job_id: int | None = None
+    ) -> list[AnalysisResponse]:
+        """Get all analyses for the authenticated user, optionally filtered by job."""
+        query = select(Analysis).where(Analysis.user_id == user.id)
+        if job_id is not None:
+            query = query.where(Analysis.job_id == job_id)
+        query = query.order_by(Analysis.created_at.desc())
+
+        result = await self.db.execute(query)
+        analyses = result.scalars().all()
+        return [
+            AnalysisResponse(
+                id=a.id,
+                resume_id=a.resume_id,
+                job_id=a.job_id,
+                candidate_name=a.candidate_name,
+                recommendation=a.recommendation,
+                overall_score=a.overall_score,
+                total_experience_years=a.total_experience_years,
+                analysis_result=AnalysisResultSchema.model_validate(a.analysis_result),
+                created_at=a.created_at,
+            )
+            for a in analyses
+        ]
+
+    async def get_analysis_by_id(
+        self, analysis_id: int, user: User
+    ) -> AnalysisResponse:
+        """Get a single analysis by ID for the authenticated user."""
+        result = await self.db.execute(
+            select(Analysis).where(
+                Analysis.id == analysis_id, Analysis.user_id == user.id
+            )
+        )
+        analysis = result.scalar_one_or_none()
+        if not analysis:
+            raise NotFoundException(
+                message=f"Analysis with id {analysis_id} not found"
+            )
+        return AnalysisResponse(
+            id=analysis.id,
+            resume_id=analysis.resume_id,
+            job_id=analysis.job_id,
+            candidate_name=analysis.candidate_name,
+            recommendation=analysis.recommendation,
+            overall_score=analysis.overall_score,
+            total_experience_years=analysis.total_experience_years,
+            analysis_result=AnalysisResultSchema.model_validate(
+                analysis.analysis_result
+            ),
             created_at=analysis.created_at,
         )
 

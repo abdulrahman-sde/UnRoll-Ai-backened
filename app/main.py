@@ -11,6 +11,7 @@ from app.models import (
     job,
     resume,
     analysis,
+    conversation,
 )  # noqa: F401 - ensures models are registered with SQLAlchemy
 
 
@@ -41,7 +42,9 @@ logger = logging.getLogger(__name__)  # Name will be "__main__"
 
 @app.on_event("startup")
 async def startup():
-    logger.info("Application starting up")
+    from app.agents.registry import startup_agents
+    startup_agents()
+    logger.info("Application starting up — agents registered")
 
 
 @app.exception_handler(AppException)

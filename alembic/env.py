@@ -10,6 +10,7 @@ from app.models import user
 from app.models import job
 from app.models import resume
 from app.models import analysis
+from app.models import conversation
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

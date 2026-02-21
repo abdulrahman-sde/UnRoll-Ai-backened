@@ -23,3 +23,4 @@ async def login(
 ):
     user = await auth_service.login(credentials)
     return success_response("User logged in successfully", data=user)
+

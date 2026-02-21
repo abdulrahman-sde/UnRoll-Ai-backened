@@ -68,8 +68,12 @@ CATEGORY DEFINITIONS (score only what is RELEVANT to the job):
                  Self-declared "Beginner" = 0–15. Unrelated tech stacks score 0.
   - education:   Degree relevance to the role + academic performance.
 
-The overall score is a weighted composite:
-  - experience: 35%  |  projects: 25%  |  tech: 25%  |  education: 15%
+The overall score is a weighted composite, but MUST adapt dynamically to the candidate's seniority:
+  - Junior/Fresher (<2 years exp): Projects should contribute heavily, as they lack professional experience.
+    Weights: experience: 10%  |  projects: 50%  |  tech: 25%  |  education: 15%
+  - Experienced (2+ years exp): Professional experience and absolute impact matter the most.
+    Weights: experience: 50%  |  projects: 10%  |  tech: 25%  |  education: 15%
+    (Do NOT completely ignore projects if present, but they must not meaningfully outweigh real experience.)
 
 CRITICAL: Experience and projects in UNRELATED technologies contribute ZERO to their scores.
 A full-stack JavaScript developer applying for a Python role gets near-zero for JS experience/projects.
@@ -114,6 +118,14 @@ Do NOT fabricate or speculate about red flags. If none exist, return an empty li
 - summary: 2-3 sentences, factual, no filler language. Lead with the most critical gap.
 - shortlist_summary: 1 concise sentence for quick recruiter scanning. State the deal-breaker first if one exists.
 - key_vectors: 3-5 discriminating strengths/weaknesses (not generic phrases). At least 2 must be weaknesses.
+  Format each vector as "Weakness: <text>" or "Strength: <text>".
+- score_justification fields: Write 2-3 sentences per category in professional recruiter language.
+  - Always lead with the primary gap or concern for this category.
+  - Then acknowledge the relevant strengths.
+  - Do NOT use raw labels like "Missing:", "Present:", "Gap-based score:", "WEAK (40)", "STRONG (85)" in the text.
+  - Write as a concise professional evaluation paragraph — e.g.:
+    "The candidate's professional Next.js tenure is limited to a 3-month internship, falling short of the sustained production experience this role requires. That said, a portfolio of independently deployed Next.js projects — including a live Vercel RAG application — demonstrates solid applied knowledge of the framework."
+  - The score (number) conveys the grade; the text only needs to explain the reasoning behind it.
 - All text fields must be professional, concise, and free of marketing language.
 - Do NOT include salary estimates or interview questions in the output.
 """
@@ -133,7 +145,7 @@ HUMAN_PROMPT = """Analyze this resume for the following job position:
 def build_analysis_chain():
     """Build a LangChain chain that outputs a structured AnalysisResultSchema."""
     llm = ChatOpenAI(
-        model="gpt-5-mini-2025-08-07",
+        model=settings.OPENAI_MODEL,
         api_key=settings.OPENAI_API_KEY,  # type: ignore[arg-type]
         temperature=0.1,
     )
@@ -151,13 +163,24 @@ def build_analysis_chain():
     return chain
 
 
+# Module-level singleton — built once on first use, reused for every request
+_analysis_chain = None
+
+
+def get_analysis_chain():
+    global _analysis_chain
+    if _analysis_chain is None:
+        _analysis_chain = build_analysis_chain()
+    return _analysis_chain
+
+
 async def run_analysis(
     resume_text: str,
     job_title: str,
     job_description: str,
 ) -> AnalysisResultSchema:
     """Run the AI analysis chain and return structured output."""
-    chain = build_analysis_chain()
+    chain = get_analysis_chain()
 
     logger.info("Running AI analysis for job: %s", job_title)
 

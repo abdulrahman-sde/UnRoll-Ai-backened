@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from app.models.job import Job
     from app.models.resume import Resume
     from app.models.analysis import Analysis
+    from app.models.conversation import Conversation
 
 
 class User(Base):
@@ -49,4 +50,12 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
         order_by="Analysis.created_at.desc()",
+    )
+
+    conversations: Mapped[List["Conversation"]] = relationship(
+        "Conversation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Conversation.created_at.desc()",
     )
