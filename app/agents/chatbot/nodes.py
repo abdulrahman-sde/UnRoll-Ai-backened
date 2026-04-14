@@ -1,5 +1,5 @@
 import logging
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import ToolNode
 
@@ -9,9 +9,9 @@ from app.agents.chatbot.tools import all_tools
 
 logger = logging.getLogger(__name__)
 
-llm = ChatOpenAI(
-    model=settings.OPENAI_MODEL,
-    api_key=settings.OPENAI_API_KEY,
+llm = ChatGroq(
+    model=settings.GROQ_MODEL,
+    api_key=settings.GROQ_API_KEY,
     temperature=0.3,
 )
 llm_with_tools = llm.bind_tools(all_tools)

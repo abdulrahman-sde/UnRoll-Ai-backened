@@ -1,5 +1,5 @@
 import logging
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 from app.schemas.analysis import AnalysisResultSchema
@@ -144,9 +144,9 @@ HUMAN_PROMPT = """Analyze this resume for the following job position:
 
 def build_analysis_chain():
     """Build a LangChain chain that outputs a structured AnalysisResultSchema."""
-    llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL,
-        api_key=settings.OPENAI_API_KEY,  # type: ignore[arg-type]
+    llm = ChatGroq(
+        model=settings.GROQ_MODEL,
+        api_key=settings.GROQ_API_KEY,  # type: ignore[arg-type]
         temperature=0.1,
     )
 
